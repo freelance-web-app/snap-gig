@@ -7,16 +7,16 @@ const http = require('http');
 const fs = require('fs');
 
 module.exports = (publicRouter) => {
-  console.log('User route has been hit');
   publicRouter.route('/user')
     .post((req, res) => {
       req.on('data', (data) => {
         req.body = JSON.parse(data);
+        console.log('INCOMING MOCHA DATA : ', req.body);
         console.log(req.body);
         let newUser = new User(req.body);
         newUser.save((err, user) => {
           if (err) {
-            res.status(404).json({msg: 'User coudn\'t be saved'});
+            res.status(404).json({msg: 'Username already exists'});
             res.end();
           } else {
             res.status(200);

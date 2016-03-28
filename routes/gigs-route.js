@@ -13,6 +13,7 @@ module.exports = (apiRouter) => {
   .get((req, res) => {
     Gig.find({}).populate('owner').populate('submissions').exec((err, gigs) => {
       if(err) throw err
+      console.log('GIGGGS FOUND : ', gigs);
       res.status(200).json(gigs)
       console.log('Showing all open gigs');
       res.end()
