@@ -8,8 +8,16 @@ const Gig = require(__dirname + '/../models/gigs-schema');
 const Sub = require(__dirname + '/../models/submissions-schema');
 const User = require(__dirname + '/../models/users-schema');
 const AWS = require('aws-sdk');
-let zlib = require('zlib');
 let s3 = new AWS.S3();
+let Twitter = require('twitter');
+require('dotenv').load();
+
+var tweetClient = new Twitter({
+  consumer_key: process.env.TWITTER_CONSUMER_KEY,
+  consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+  access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
+  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+});
 
 var nodeMailer = require('nodemailer');
 var mailer = require(__dirname + '/../lib/email-module');
@@ -20,6 +28,8 @@ module.exports = (apiRouter) => {
       Gig.find({}).populate('owner').populate('submissions').exec((err, gigs) => {
         if(err) throw err;
         res.status(200).json({msg: gigs});
+
+
         res.end();
       });
     })
@@ -39,6 +49,15 @@ module.exports = (apiRouter) => {
           mailer.gig(req.user.email, req.body.name, req.user.username, req.body.deadline, gig, (err, info) => {
             if (err) throw err;
           })
+
+          let tweet = 'Psst, we have a new gig. Search for ' + req.body.name + ' and submit!';
+
+          tweetClient.post('statuses/update', {status: tweet}, function (error, tweets, response) {
+            if (err) throw err;
+            console.log(tweets);
+            // console.log(response);
+          });
+
           res.json({data: gig})
           res.end();
         })
@@ -137,8 +156,6 @@ module.exports = (apiRouter) => {
           })
           .send(function(err, data) {
           });
-          res.status(200).json({sub: submission, msg: 'Email verification sent and file uploaded to S3'});
-          res.end();
 
           s3.getSignedUrl('getObject', {Bucket: 'snap-gig-gig-bucket-dump', Key: req.body.name}, (err, url) => {
             if (err) throw err;
@@ -149,7 +166,8 @@ module.exports = (apiRouter) => {
               }
             });
           });
-          // Still need to implement S3 save and grab of saved URL. Also grabbing "CHUNKS" of attachment data
+          res.status(200).json({sub: submission, msg: 'Email verification sent and file uploaded to S3'});
+          res.end(); //originally found above s3.getSignedUrl
         });
       });
     });
