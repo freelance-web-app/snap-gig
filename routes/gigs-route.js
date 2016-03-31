@@ -27,9 +27,7 @@ module.exports = (apiRouter) => {
     .get((req, res) => {
       Gig.find({}).populate('owner').populate('submissions').exec((err, gigs) => {
         if(err) throw err;
-        res.status(200).json({msg: gigs});
-
-
+        res.status(200).json(gigs);
         res.end();
       });
     })
@@ -54,8 +52,6 @@ module.exports = (apiRouter) => {
 
           tweetClient.post('statuses/update', {status: tweet}, function (error, tweets, response) {
             if (err) throw err;
-            console.log(tweets);
-            // console.log(response);
           });
 
           res.json({data: gig})
@@ -75,6 +71,8 @@ module.exports = (apiRouter) => {
       })
     })
     .put((req, res) => {
+      req.on('data', (data) => {
+        req.body = JSON.parse(data);
       let userInfo = req.user._id;
       Gig.findById(req.params.id, (err, gig) => {
         if (err) throw err;
@@ -89,7 +87,22 @@ module.exports = (apiRouter) => {
           res.end();
         };
       });
+
+      if (req.body.winner) {
+        User.findById(req.body.winner, (err, winner) => {
+          let winTweet = 'We have another gig winner! Congrats to ' + winner.username +' for their awesome submission.'
+          mailer.winner(winner.email, winner.username, (err, info) => {
+            if (err) throw err;
+          })
+          tweetClient.post('statuses/update', {status: winTweet}, function (error, tweets, response) {
+            if (err) throw err;
+          });
+        })
+      } else {
+        console.log('no winner entered in Put request');
+      }
     })
+  })
     .delete((req, res) => {
       let userInfo = req.user._id;
       Gig.findById(req.params.id, (err, gig) => {
@@ -107,7 +120,6 @@ module.exports = (apiRouter) => {
   apiRouter.route('/gigs/:id/submissions')
     .post((req, res) => {
       req.on('data', (data) => {
-        var newBody;
         req.body = JSON.parse(data);
         let newSub = new Sub(req.body);
         let globalSubmitId;
@@ -157,9 +169,11 @@ module.exports = (apiRouter) => {
           .send(function(err, data) {
           });
 
+          let subOwnerId = req.user._id
+
           s3.getSignedUrl('getObject', {Bucket: 'snap-gig-gig-bucket-dump', Key: req.body.name}, (err, url) => {
             if (err) throw err;
-            Sub.findByIdAndUpdate(globalSubmitId, {$push: {files: url}}, (err, sub) => {
+            Sub.findByIdAndUpdate(globalSubmitId, {$push: {files: url, owner: subOwnerId}}, (err, sub) => {
               if (err) {
                 res.status(404).json({msg: 'File URL was not pushed to submission schema'});
                 res.end();
@@ -167,7 +181,7 @@ module.exports = (apiRouter) => {
             });
           });
           res.status(200).json({sub: submission, msg: 'Email verification sent and file uploaded to S3'});
-          res.end(); //originally found above s3.getSignedUrl
+          res.end();
         });
       });
     });

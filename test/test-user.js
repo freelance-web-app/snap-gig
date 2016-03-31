@@ -78,8 +78,8 @@ describe('Testing users router and authentication', () => {
     .set('Authorization', 'token ' + userToken)
     .end((err, res) => {
       expect(res.status).to.eql(200);
-      // expect(res.body).to.be.a('array');
-      // expect(res.body[0].name).to.eql('dog bed');
+      expect(res.body[1].description).to.eql('A comfy dog bed');
+      expect(res.body[1].name).to.eql('dog bed');
       done();
     });
   });
