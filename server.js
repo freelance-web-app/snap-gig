@@ -27,6 +27,9 @@ require('./routes/login-route')(loginRouter);
 // Gigs Router
 require('./routes/gigs-route')(apiRouter);
 
+//Submission router
+require('./routes/submission-route')(apiRouter);
+
 //admin routes
 require('./routes/admin-route')(adminRouter);
 
