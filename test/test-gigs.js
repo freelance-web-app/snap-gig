@@ -47,7 +47,7 @@ describe('Testing logging in verification at /login/login. ', () => {
     })
   })
 })
-let getGigId;
+
 describe('Testing /api/gigs rest routes. ', () => {
   it('expect POST to create a new gig.', (done) => {
     request('localhost:3000')
